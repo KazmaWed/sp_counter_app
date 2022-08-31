@@ -12,52 +12,84 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.pink,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  // 初期値は呼び出し後に決定するためlate
-  late int _counter;
-
-  // 保存した値呼び出し
+class MyHomePage extends StatelessWidget {
+  const MyHomePage({Key? key}) : super(key: key);
+  // 保存した値ロード
   Future<int> _futureLoadedValue() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     // 保存した値がなければゼロ
     return prefs.getInt('counterValue') ?? 0;
   }
 
-  // 値の保存
-  void _saveValue() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setInt('counterValue', _counter);
-  }
-
-  // 値のインクリメント＆保存まで実行
-  void _incrementCounter() {
-    setState(() => _counter++);
-    _saveValue();
-  }
-
   @override
   Widget build(BuildContext context) {
+    // 保存した値ロード
+    final futureLoadedValue = _futureLoadedValue();
+
+    return FutureBuilder(
+      future: futureLoadedValue,
+      builder: (context, AsyncSnapshot<int> snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          // 値ロード中プログレスバー
+          return Scaffold(
+            appBar: AppBar(title: const Text('SP COUNTER APP')),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        } else if (snapshot.hasError) {
+          // ロード失敗
+          return Scaffold(
+            appBar: AppBar(title: const Text('SP COUNTER APP')),
+            body: Center(child: Text(snapshot.error.toString())),
+          );
+        } else {
+          // ロード後
+          return CounterView(initialValue: snapshot.data!);
+        }
+      },
+    );
+  }
+}
+
+// ロード後のメインのビュー
+class CounterView extends StatefulWidget {
+  const CounterView({Key? key, required this.initialValue}) : super(key: key);
+  final int initialValue;
+
+  @override
+  State<CounterView> createState() => _CounterViewState();
+}
+
+class _CounterViewState extends State<CounterView> {
+  int? counter;
+  @override
+  Widget build(BuildContext context) {
+    counter ??= widget.initialValue;
+
+    // 値のセーブ
+    void _saveValue() async {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setInt('counterValue', counter!);
+    }
+
+    // 値のインクリメント＆保存まで実行
+    void _incrementCounter() {
+      setState(() {
+        counter = counter! + 1;
+      });
+      _saveValue();
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
+      appBar: AppBar(title: const Text('SP COUNTER APP')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -66,7 +98,7 @@ class _MyHomePageState extends State<MyHomePage> {
               'You have pushed the button this many times:',
             ),
             Text(
-              '$_counter',
+              '$counter',
               style: Theme.of(context).textTheme.headline4,
             ),
           ],
