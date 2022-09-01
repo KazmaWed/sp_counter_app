@@ -1,6 +1,6 @@
 # sp_counter_app
 
-A new Flutter project.
+パッケージ`shared_preferences`を利用したカウンターアプリのサンプルです.
 
 ## Getting Started
 

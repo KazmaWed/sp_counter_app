@@ -69,21 +69,27 @@ class CounterView extends StatefulWidget {
 }
 
 class _CounterViewState extends State<CounterView> {
-  int? counter;
+  // 初回ビルド判定
+  bool firstBuild = true;
+  late int counter;
+
   @override
   Widget build(BuildContext context) {
-    counter ??= widget.initialValue;
+    if (firstBuild) {
+      counter = widget.initialValue;
+      firstBuild = false;
+    }
 
-    // 値のセーブ
+    // 値の保存
     void _saveValue() async {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      prefs.setInt('counterValue', counter!);
+      prefs.setInt('counterValue', counter);
     }
 
     // 値のインクリメント＆保存まで実行
     void _incrementCounter() {
       setState(() {
-        counter = counter! + 1;
+        counter = counter + 1;
       });
       _saveValue();
     }
